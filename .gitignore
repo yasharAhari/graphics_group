@@ -62,4 +62,5 @@ sysinfo.txt
 # Crashlytics generated file
 crash
 
+Collisions/Temp/*
 UnityLockfile
