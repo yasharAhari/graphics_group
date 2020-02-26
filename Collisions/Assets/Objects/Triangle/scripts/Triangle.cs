@@ -5,21 +5,24 @@ using UnityEngine;
 public class Triangle : MonoBehaviour
 {
 
-    public Triangle(UnitSurface surface)
-    {
-        this.setSurface(surface);
-    }
+    private UnitSurface surface;
 
-    private UnitSurface surface; 
-
-    public void setSurface(UnitSurface surface)
+    public void SetSurface(UnitSurface surface)
     {
+        
         this.surface = surface;
     }
-
+        
     // Start is called before the first frame update
     void Start()
     {
+        this.gameObject.AddComponent(typeof(MeshFilter));
+        this.UpdateShape();
+    }
+
+    void Awake()
+    {
+        this.gameObject.AddComponent(typeof(MeshRenderer));
         
     }
 
@@ -36,6 +39,10 @@ public class Triangle : MonoBehaviour
      */ 
     public void UpdateShape()
     {
-        this.GetComponent<Mesh>().vertices = this.surface.getVertices();
+        this.GetComponent<MeshFilter>().mesh.vertices = this.surface.getVertices();
+        this.GetComponent<MeshFilter>().mesh.triangles = this.surface.getTriangle();
+        this.GetComponent<MeshFilter>().mesh.RecalculateNormals();
+        this.GetComponent<MeshRenderer>().material.SetColor("_Color", UnityEngine.Random.ColorHSV());
+
     }
 }

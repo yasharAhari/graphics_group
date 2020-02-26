@@ -51,7 +51,7 @@ public class CircleGen : IGenerator
     private int CalulateNumberOfTriangles(double latitudeAngle)
     {
         // calculate the radius of the circle 
-        double radiusPrime = Math.Abs(Math.Cos((Math.PI / 180) * latitudeAngle))*this.Radius;
+        double radiusPrime = Math.Abs(Math.Cos(DegreeToRadian(latitudeAngle)))*this.Radius;
 
         // find the perimeter for the circle 
         double p = 2 * Math.PI * radiusPrime;
@@ -60,6 +60,21 @@ public class CircleGen : IGenerator
         int minT = (int)Math.Floor(p / this.TriangleSize);
         
         return minT;
+    }
+
+    private double DegreeToRadian(double degree)
+    {
+        return (Math.PI / 180) * degree;
+    }
+
+
+    private Point SToCC(double radius, double phi, double theta)
+    {
+        float x = (float)(radius * Math.Sin(DegreeToRadian(phi)) * Math.Cos(DegreeToRadian(theta)));
+        float y = (float)(radius * Math.Sin(DegreeToRadian(phi)) * Math.Sin(DegreeToRadian(theta)));
+        float z = (float)(radius * Math.Cos(DegreeToRadian(phi)));
+
+        return new Point(x,y,z);
     }
 
 
@@ -72,6 +87,13 @@ public class CircleGen : IGenerator
         // How many circle we need
         int numberOfCircles = this.CalulateNumberOfCircles();
 
-        
+        List<Point> lastRunPoints = new List<Point>();
+
+
+        for(int l_index = 0; l_index < numberOfCircles; ++l_index)
+        {
+            
+        }
+
     }
 }
