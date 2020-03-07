@@ -127,11 +127,14 @@ public class Point : IEquatable<Point>
 public class Vertex : Point
 {
     //There should be a maximum of 3 half edges in this ArrayList
-    private ArrayList halfEdges = new ArrayList();
+    public ArrayList halfEdges = new ArrayList();
 
     public Vertex(float x, float y, float z) : base(x, y, z)
     {
-        halfEdges.Capacity = 3;
+    }
+
+    public Vertex(Point p) : base(p.x, p.y, p.z)
+    {
     }
 
     public void tryToAddHalfEdge(HalfEdge halfEdge)
@@ -149,10 +152,17 @@ public class HalfEdge
 {
     public Vertex startVertex;
     public Vertex endVertex;
-    public Face face;
-    public HalfEdge opposite;
-    public HalfEdge next;
     public Boolean isClockwise;
+    public Face face = null;
+    public HalfEdge opposite = null;
+    public HalfEdge next = null;
+
+    public HalfEdge(Vertex start, Vertex end, Boolean isClockwise)
+    {
+        startVertex = start;
+        endVertex = end;
+        this.isClockwise = isClockwise;
+    }
 }
 
 public class Face
