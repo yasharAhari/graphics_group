@@ -34,8 +34,19 @@ public class SphereGenerator : IGenerator
 
     public UnitSurface[] GetUnitSurfaces()
     {
-        //not done yet
-        throw new System.NotImplementedException();
+        UnitSurface[] unitSurfaceArray = new UnitSurface[faceList.Count];
+
+        for (int i = 0; i < unitSurfaceArray.Length; i++)
+        {
+            Face face = (Face)faceList[i];
+            Vertex point1 = face.halfEdges[0].endVertex;
+            Vertex point2 = face.halfEdges[1].endVertex;
+            Vertex point3 = face.halfEdges[2].endVertex;
+            UnitSurface triangle = new UnitSurface(point1, point2, point3);
+            unitSurfaceArray[i] = triangle;
+        }
+
+        return unitSurfaceArray;
     }
 
     //Written by Yashar
@@ -46,6 +57,11 @@ public class SphereGenerator : IGenerator
         float z = (float)(radius * Math.Cos(DegreesToRadians(phiDegrees)));
 
         return new Point(x, y, z);
+    }
+
+    private Point CCToS(float x, float y, float z)
+    {
+        throw new NotImplementedException();
     }
 
     //Written by Yashar
@@ -61,74 +77,112 @@ public class SphereGenerator : IGenerator
 
     private void createEdge(Vertex first, Vertex second)
     {
-        HalfEdge firstToSecond = new HalfEdge(first, second, false);
-        HalfEdge secondToFirst = new HalfEdge(second, first, true);
+        HalfEdge[] halfEdges = createHalfEdges(first, second);
+        tryToChain(first, second);
+        tryToAddFace(first, second, halfEdges[0]);
+    }
+
+    //Returns firstToSecond, secondToFirst in that order
+    //It is common to call tryToChain() after this
+    private HalfEdge[] createHalfEdges(Vertex first, Vertex second)
+    {
+        HalfEdge[] halfEdges = new HalfEdge[2];
+
+        HalfEdge firstToSecond = new HalfEdge(first, second);
+        HalfEdge secondToFirst = new HalfEdge(second, first);
+
+        firstToSecond.opposite = secondToFirst;
+        secondToFirst.opposite = firstToSecond;
 
         first.tryToAddHalfEdge(secondToFirst);
         second.tryToAddHalfEdge(firstToSecond);
 
-        //set some next values of half edges
-        foreach (HalfEdge halfEdge in first.halfEdges)
+        halfEdges[0] = firstToSecond;
+        halfEdges[1] = secondToFirst;
+
+        return halfEdges;
+    }
+
+    //This should only be called immediately after calling createHalfEdges()
+    private void tryToChain(Vertex first, Vertex second)
+    {
+        if (first.halfEdges.Count >= 2 && second.halfEdges.Count == 1)
         {
-            if (halfEdge.isClockwise == false)
+            foreach (HalfEdge hE in first.halfEdges)
             {
-                if (halfEdge.face == null) //edge case
+                //This logic requires that triangles be formed iteratively
+                if (hE.face == null)
                 {
-                    halfEdge.next = firstToSecond;
+                    directChain(hE, first, second);
+                    return;
                 }
             }
-            
         }
-        foreach (HalfEdge halfEdge in second.halfEdges)
+    }
+
+    private void directChain(HalfEdge firstEdge, Vertex begin, Vertex end)
+    {
+        foreach (HalfEdge hE in end.halfEdges)
         {
-            if (halfEdge.isClockwise == true)
+            if (hE.startVertex == begin)
             {
-                if (halfEdge.face == null) //edge case
+                directChain(firstEdge, hE);
+                return;
+            }
+        }
+    }
+
+    private void directChain(HalfEdge firstEdge, HalfEdge secondEdge)
+    {
+        firstEdge.next = secondEdge;
+    }
+
+    private void tryToAddFace(Vertex first, Vertex second, HalfEdge firstToSecond)
+    {
+        HalfEdge secondToCommon = null;
+        HalfEdge commonToFirst = null;
+
+        foreach (HalfEdge hFirst in first.halfEdges)
+        {
+            foreach (HalfEdge hSecond in second.halfEdges)
+            {
+                if (hFirst.startVertex == hSecond.opposite.endVertex)
                 {
-                    halfEdge.next = secondToFirst;
+                    commonToFirst = hFirst;
+                    secondToCommon = hSecond.opposite;
                 }
             }
         }
 
-        //check if a triangle was made
-        //first see if there is a common third point
-        foreach (HalfEdge halfEdge in first.halfEdges)
+        if (secondToCommon != null && commonToFirst != null)
         {
-            if (halfEdge.isClockwise == false)
-            {
-                Vertex possibleCommonVertex = halfEdge.startVertex;
-                foreach (HalfEdge pHalfEdge in possibleCommonVertex.halfEdges)
-                {
-                    if (pHalfEdge.isClockwise == false && pHalfEdge.startVertex == second)
-                    {
-                        //this is a common vertex, so set more next values
-                        firstToSecond.next = pHalfEdge;
-                        foreach (HalfEdge ppHalfEdge in possibleCommonVertex.halfEdges)
-                        {
-                            if (ppHalfEdge.startVertex == first)
-                            {
-                                secondToFirst.next = ppHalfEdge;
-                            }
-                        }
-                    }
-                }
-                
-            }
+            directChain(commonToFirst, firstToSecond);
+            directChain(firstToSecond, secondToCommon);
+
+            Face triangleFace = new Face(commonToFirst, firstToSecond, secondToCommon);
+            commonToFirst.face = triangleFace;
+            firstToSecond.face = triangleFace;
+            secondToCommon.face = triangleFace;
+
+            //add to data structure
+            faceList.Add(triangleFace);
         }
-        // Validate cycles
-        if (firstToSecond.next != null
-            && firstToSecond.next.next != null
-            && firstToSecond.next.next.endVertex == first
-            && secondToFirst.next != null
-            && secondToFirst.next.next != null
-            && secondToFirst.next.next.endVertex == second)
-        {
-            // THE CLOCKWISE CYCLES SHOULDN't WORK
-            // Make face with counter clockwise half edges
-            Face validatedFace = new Face(firstToSecond, firstToSecond.next, firstToSecond.next.next);
-            // add to data structure
-            faceList.Add(validatedFace);
-        }
+    }
+
+    //"Edge" case when generating icosohedron's second to last edge
+    private void createEdgeAndDiamond(Vertex first, Vertex second, Vertex third)
+    {
+        HalfEdge[] halfEdges = createHalfEdges(first, second);
+        tryToAddFace(first, second, halfEdges[0]);
+        directChain(halfEdges[1], first, third);
+    }
+
+    //"Edge" case when generating icosohedron's last edge
+    private void createDoubledEdge(Vertex first, Vertex second)
+    {
+        HalfEdge[] halfEdges = createHalfEdges(first, second);
+        tryToAddFace(first, second, halfEdges[0]);
+        tryToAddFace(second, first, halfEdges[1]);
     }
 
     private Vertex createNorthPole()

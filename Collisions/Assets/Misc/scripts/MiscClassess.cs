@@ -152,16 +152,14 @@ public class HalfEdge
 {
     public Vertex startVertex;
     public Vertex endVertex;
-    public Boolean isClockwise;
     public Face face = null;
     public HalfEdge opposite = null;
     public HalfEdge next = null;
 
-    public HalfEdge(Vertex start, Vertex end, Boolean isClockwise)
+    public HalfEdge(Vertex start, Vertex end)
     {
         startVertex = start;
         endVertex = end;
-        this.isClockwise = isClockwise;
     }
 }
 
