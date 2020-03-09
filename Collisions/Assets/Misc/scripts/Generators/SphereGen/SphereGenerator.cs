@@ -148,11 +148,16 @@ public class SphereGenerator : IGenerator
         {
             foreach (HalfEdge hSecond in second.halfEdges)
             {
-                if (hFirst.startVertex == hSecond.opposite.endVertex)
+                if (hFirst.face == null && hFirst.startVertex == hSecond.opposite.endVertex)
                 {
                     commonToFirst = hFirst;
                     secondToCommon = hSecond.opposite;
+                    break;
                 }
+            }
+            if (secondToCommon != null && commonToFirst != null)
+            {
+                break;
             }
         }
 
@@ -180,7 +185,7 @@ public class SphereGenerator : IGenerator
     }
 
     //"Edge" case when generating icosahedron's last edge
-    private void createDoubledEdge(Vertex first, Vertex second) //TODO fix bug
+    private void createDoubledEdge(Vertex first, Vertex second)
     {
         HalfEdge[] halfEdges = createHalfEdges(first, second);
         tryToAddFace(first, second, halfEdges[0]);
