@@ -7,8 +7,7 @@ public class colid : MonoBehaviour
     public GameObject triangle;
 
     // add your generator here, No need for any import
-    public IGenerator generator = new testGen();
-
+    public IGenerator generator = new SphereGenerator();
 
 
 

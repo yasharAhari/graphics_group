@@ -7,7 +7,7 @@ public class SphereGenerator : IGenerator
 {
     private ArrayList vertexList = new ArrayList();
     private ArrayList faceList = new ArrayList();
-    private float radius = 0f;
+    private float radius = 4f;
     private float edgeLength = 0f;
     private double phiRotationDegrees;
     private double thetaRotationDegrees;
@@ -15,9 +15,11 @@ public class SphereGenerator : IGenerator
 
     public SphereGenerator()
     {
-        phiRotationDegrees = RadiansToDegrees(Math.Atan(0.5)); //about 26.5 degrees
+        phiRotationDegrees = 60;
         thetaRotationDegrees = 72;
         southPoleThetaRotationOffsetDegrees = thetaRotationDegrees / 2;
+
+        generateIcosahedron();
     }
 
     public void SetRadius(float r)
@@ -169,7 +171,7 @@ public class SphereGenerator : IGenerator
         }
     }
 
-    //"Edge" case when generating icosohedron's second to last edge
+    //"Edge" case when generating icosahedron's second to last edge
     private void createEdgeAndDiamond(Vertex first, Vertex second, Vertex third)
     {
         HalfEdge[] halfEdges = createHalfEdges(first, second);
@@ -177,8 +179,8 @@ public class SphereGenerator : IGenerator
         directChain(halfEdges[1], first, third);
     }
 
-    //"Edge" case when generating icosohedron's last edge
-    private void createDoubledEdge(Vertex first, Vertex second)
+    //"Edge" case when generating icosahedron's last edge
+    private void createDoubledEdge(Vertex first, Vertex second) //TODO fix bug
     {
         HalfEdge[] halfEdges = createHalfEdges(first, second);
         tryToAddFace(first, second, halfEdges[0]);
@@ -188,19 +190,23 @@ public class SphereGenerator : IGenerator
     private Vertex createNorthPole()
     {
         Vertex northPole = new Vertex(SToCC(radius, 0, 0));
+
         //add to data structure
         vertexList.Add(northPole);
+
         return northPole;
     }
 
-    private ArrayList createNorthVertices()
+    private Vertex[] createNorthVertices()
     {
-        ArrayList vertices = new ArrayList();
+        Vertex[] vertices = new Vertex[5];
+
         Vertex first = new Vertex(SToCC(radius, phiRotationDegrees, 0));
         Vertex second = new Vertex(SToCC(radius, phiRotationDegrees, thetaRotationDegrees));
         Vertex third = new Vertex(SToCC(radius, phiRotationDegrees, thetaRotationDegrees * 2));
         Vertex fourth = new Vertex(SToCC(radius, phiRotationDegrees, thetaRotationDegrees * 3));
         Vertex fifth = new Vertex(SToCC(radius, phiRotationDegrees, thetaRotationDegrees * 4));
+
         //add to data structure
         vertexList.Add(first);
         vertexList.Add(second);
@@ -208,36 +214,93 @@ public class SphereGenerator : IGenerator
         vertexList.Add(fourth);
         vertexList.Add(fifth);
 
-        vertices.Add(first);
-        vertices.Add(second);
-        vertices.Add(third);
-        vertices.Add(fourth);
-        vertices.Add(fifth);
+        vertices[0] = first;
+        vertices[1] = second;
+        vertices[2] = third;
+        vertices[3] = fourth;
+        vertices[4] = fifth;
+
         return vertices;
-    }
-
-    private void createNorthTriangles()
-    {
-        Vertex northPole = createNorthPole();
-        ArrayList vertices = createNorthVertices();
-
-        createEdge(northPole, (Vertex)vertices[0]);
-        createEdge((Vertex)vertices[0], (Vertex)vertices[1]);
-        createEdge((Vertex)vertices[1], northPole);
-        createEdge((Vertex)vertices[1], (Vertex)vertices[2]);
-        createEdge((Vertex)vertices[2], northPole);
-        createEdge((Vertex)vertices[2], (Vertex)vertices[3]);
-        createEdge((Vertex)vertices[3], northPole);
-        createEdge((Vertex)vertices[3], (Vertex)vertices[4]);
-        createEdge((Vertex)vertices[4], northPole);
-        createEdge((Vertex)vertices[4], (Vertex)vertices[0]); //edge case
     }
 
     private Vertex createSouthPole()
     {
         Vertex southPole = new Vertex(SToCC(radius, 180, 0));
+
         //add to data structure
         vertexList.Add(southPole);
+
         return southPole;
+    }
+
+    private Vertex[] createSouthVertices()
+    {
+        Vertex[] vertices = new Vertex[5];
+
+        Vertex first = new Vertex(SToCC(radius, 180 - phiRotationDegrees, southPoleThetaRotationOffsetDegrees));
+        Vertex second = new Vertex(SToCC(radius, 180 - phiRotationDegrees, southPoleThetaRotationOffsetDegrees + thetaRotationDegrees));
+        Vertex third = new Vertex(SToCC(radius, 180 - phiRotationDegrees, southPoleThetaRotationOffsetDegrees + thetaRotationDegrees * 2));
+        Vertex fourth = new Vertex(SToCC(radius, 180 - phiRotationDegrees, southPoleThetaRotationOffsetDegrees + thetaRotationDegrees * 3));
+        Vertex fifth = new Vertex(SToCC(radius, 180 - phiRotationDegrees, southPoleThetaRotationOffsetDegrees + thetaRotationDegrees * 4));
+
+        //add to data structure
+        vertexList.Add(first);
+        vertexList.Add(second);
+        vertexList.Add(third);
+        vertexList.Add(fourth);
+        vertexList.Add(fifth);
+
+        vertices[0] = first;
+        vertices[1] = second;
+        vertices[2] = third;
+        vertices[3] = fourth;
+        vertices[4] = fifth;
+
+        return vertices;
+
+    }
+
+    public void generateIcosahedron()
+    {
+        Vertex northPole = createNorthPole();
+        Vertex[] northVertices = createNorthVertices();
+        Vertex[] southVertices = createSouthVertices();
+        Vertex southPole = createSouthPole();
+
+        //Phase 1: Create top section, fanning out from north pole
+        createEdge(northPole, northVertices[0]);
+        createEdge(northVertices[0], northVertices[1]);
+        createEdge(northVertices[1], northPole);
+        createEdge(northVertices[1], northVertices[2]);
+        createEdge(northVertices[2], northPole);
+        createEdge(northVertices[2], northVertices[3]);
+        createEdge(northVertices[3], northPole);
+        createEdge(northVertices[3], northVertices[4]);
+        createEdge(northVertices[4], northPole);
+        createEdge(northVertices[4], northVertices[0]);
+
+        //Phase 2: Add on downward-facing triangles within middle section
+        createEdge(northVertices[0], southVertices[0]);
+        createEdge(southVertices[0], northVertices[1]);
+        createEdge(northVertices[1], southVertices[1]);
+        createEdge(southVertices[1], northVertices[2]);
+        createEdge(northVertices[2], southVertices[2]);
+        createEdge(southVertices[2], northVertices[3]);
+        createEdge(northVertices[3], southVertices[3]);
+        createEdge(southVertices[3], northVertices[4]);
+        createEdge(northVertices[4], southVertices[4]);
+        createEdge(southVertices[4], northVertices[0]);
+
+        //Phase 3: Add on bottom section while also completing the middle section
+        createEdge(southVertices[0], southVertices[1]);
+        createEdge(southVertices[0], southPole);
+        createEdge(southPole, southVertices[1]);
+        createEdge(southVertices[1], southVertices[2]);
+        createEdge(southPole, southVertices[2]);
+        createEdge(southVertices[2], southVertices[3]);
+        createEdge(southPole, southVertices[3]);
+        createEdge(southVertices[3], southVertices[4]);
+        createEdgeAndDiamond(southPole, southVertices[4], southVertices[0]);
+        createDoubledEdge(southVertices[4], southVertices[0]);
     }
 }
