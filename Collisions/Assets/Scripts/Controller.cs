@@ -69,7 +69,7 @@ public  class Controller : MonoBehaviour {
         // Loads the default prefab which is the sphere.. this path is used when launch command is given
         // Path has format Prefabs/<projectileShape>
         resourcesPath += model.ProjectileShape;
-        
+
     }
     private void Update ( ) {
         massText.text = model.ProjectileMass.ToString( );
@@ -83,39 +83,51 @@ public  class Controller : MonoBehaviour {
         if ( Input.GetKeyDown( KeyCode.Space ) ) {
             launchButton.Select( );
         }
+
     }
 
     public void launch ( ) {
-        // creates the prefab. the movement should be handled instance the script attached to the prefab
-        // TODO: delete the z offset, its only there so we can see the object in front of the camera during testing
-        Instantiate( (GameObject) Resources.Load(resourcesPath) , new Vector3( mainCamera.transform.position.x , mainCamera.transform.position.y , mainCamera.transform.position.z + 3 ) , transform.rotation );
+        // creates the prefab projectile. the movement should be handled instance the script attached to the prefab
+        GameObject proj = (GameObject) Resources.Load( resourcesPath );
+        proj.GetComponent<Projectile>( ).speed = model.ProjectileSpeed;
+        proj.transform.localScale = new Vector3( model.ProjectileScale , model.ProjectileScale , model.ProjectileScale );
+        // Eventually use this area to set the Mass of the projectile.
 
+       // Instantiate( proj,new Vector3( mainCamera.transform.position.x , mainCamera.transform.position.y , mainCamera.transform.position.z ) , transform.rotation );
+        Instantiate( proj ,  mainCamera.ScreenToWorldPoint(new Vector3(Screen.width/2, Screen.height/2, mainCamera.nearClipPlane)) , mainCamera.transform.rotation );
     }
 
 
     public void setProjectMass ( ) {
         // If the control key is held down then we will round the number to a whole number
         model.ProjectileMass = massSlider.value;
+        Debug.Log( "Mass set to: " + model.ProjectileMass );
     }
-    public void setRoundedMassValue () {
-        model.ProjectileMass = (float)Math.Round( (double)model.ProjectileMass );
+    public void setRoundedMassValue ( ) {
+        model.ProjectileMass = ( float ) Math.Round( ( double ) model.ProjectileMass );
+        Debug.Log( "Mass set to: " + model.ProjectileMass );
     }
     public void setProjectileSpeed ( ) {
         model.ProjectileSpeed = speedSlider.value;
+        Debug.Log( "Speed set to: " + model.ProjectileSpeed );
     }
     public void setRoundedSpeedValue ( ) {
         model.ProjectileSpeed = ( float ) Math.Round( ( double ) model.ProjectileSpeed );
+        Debug.Log( "Speed set to: " + model.ProjectileSpeed );
     }
     public void setProjectileScale ( ) {
         model.ProjectileScale = scaleSlider.value;
+        Debug.Log( "Scale set to: " + model.ProjectileScale );
     }
     public void setRoundedScaleValue ( ) {
         model.ProjectileScale = ( float ) Math.Round( ( double ) model.ProjectileScale );
+        Debug.Log( "Scale set to: " + model.ProjectileScale );
     }
 
     public void setProjectileShapefromDropdown ( ) {
         // Each item in the drop down as a value from 0 to n-1 where n is the number of items in the list
         // We will get the selected item and use it to set the current ProjectileShape in the model
         model.ProjectileShape = model.ProjectileShapesArray [ shapeDropdown.value ];
+        Debug.Log( "Shape set to: " + model.ProjectileShape );
     }
 }
