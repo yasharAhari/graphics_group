@@ -166,6 +166,7 @@ public class HalfEdge
 public class Face
 {
     public HalfEdge[] halfEdges = new HalfEdge[3];
+    public string id = Guid.NewGuid().ToString();
 
     public Face(HalfEdge one, HalfEdge two, HalfEdge three)
     {

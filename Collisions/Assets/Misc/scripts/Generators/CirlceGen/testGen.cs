@@ -6,12 +6,12 @@
         UnitSurface[] surfaces = new UnitSurface[6];
         Point commonAppex = new Point(0, 0, 10f);
 
-        surfaces[0] = new UnitSurface(new Point(5,-5,0), new Point(5,5,0), commonAppex);
-        surfaces[1] = new UnitSurface(new Point(5,5,0), new Point(-5,5,0), commonAppex);
-        surfaces[2] = new UnitSurface(new Point(-5,5,0), new Point(-5,-5,0), commonAppex);
-        surfaces[3] = new UnitSurface(new Point(-5,-5,0), new Point(5,-5,0), commonAppex);
-        surfaces[4] = new UnitSurface(new Point(-5,-5,0), new Point(5,5,0), new Point(5,-5,0));
-        surfaces[5] = new UnitSurface(new Point(5, 5, 0), new Point(-5, -5, 0), new Point(-5, 5, 0));
+        surfaces[0] = new UnitSurface(new Point(5,-5,0), new Point(5,5,0), commonAppex, "Triangle");
+        surfaces[1] = new UnitSurface(new Point(5,5,0), new Point(-5,5,0), commonAppex, "Triangle");
+        surfaces[2] = new UnitSurface(new Point(-5,5,0), new Point(-5,-5,0), commonAppex, "Triangle");
+        surfaces[3] = new UnitSurface(new Point(-5,-5,0), new Point(5,-5,0), commonAppex, "Triangle");
+        surfaces[4] = new UnitSurface(new Point(-5,-5,0), new Point(5,5,0), new Point(5,-5,0), "Triangle");
+        surfaces[5] = new UnitSurface(new Point(5, 5, 0), new Point(-5, -5, 0), new Point(-5, 5, 0), "Triangle");
 
         return surfaces;
     }

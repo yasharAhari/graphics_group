@@ -16,6 +16,7 @@ public class UnitSurface
     public Point a;
     public Point b;
     public Point c;
+    public string id;
 
     /**
      * <summary>Constructor</summary>
@@ -23,11 +24,12 @@ public class UnitSurface
      * <param name="b">second Point</param>
      * <param name="c">third point</param>
      * */
-    public UnitSurface(Point a, Point b, Point c)
+    public UnitSurface(Point a, Point b, Point c, string id)
     {
         this.a = a;
         this.b = b;
         this.c = c;
+        this.id = id;
     }
 
     /**

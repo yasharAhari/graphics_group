@@ -7,19 +7,20 @@ public class SphereGenerator : IGenerator
 {
     private ArrayList vertexList = new ArrayList();
     private ArrayList faceList = new ArrayList();
-    private float radius = 4f;
-    private float edgeLength = 0f;
+    private float radius;
+    private float edgeLength;
     private double phiRotationDegrees;
     private double thetaRotationDegrees;
     private double southPoleThetaRotationOffsetDegrees;
+    private int numberOfTriangulations;
 
     public SphereGenerator()
     {
+        radius = 1f;
         phiRotationDegrees = 60;
         thetaRotationDegrees = 72;
         southPoleThetaRotationOffsetDegrees = thetaRotationDegrees / 2;
-
-        generateIcosahedron();
+        numberOfTriangulations = 0;
     }
 
     public void SetRadius(float r)
@@ -36,6 +37,8 @@ public class SphereGenerator : IGenerator
 
     public UnitSurface[] GetUnitSurfaces()
     {
+        generateSphere();
+
         UnitSurface[] unitSurfaceArray = new UnitSurface[faceList.Count];
 
         for (int i = 0; i < unitSurfaceArray.Length; i++)
@@ -44,11 +47,77 @@ public class SphereGenerator : IGenerator
             Vertex point1 = face.halfEdges[0].endVertex;
             Vertex point2 = face.halfEdges[1].endVertex;
             Vertex point3 = face.halfEdges[2].endVertex;
-            UnitSurface triangle = new UnitSurface(point1, point2, point3);
+            UnitSurface triangle = new UnitSurface(point1, point2, point3, face.id);
             unitSurfaceArray[i] = triangle;
         }
 
         return unitSurfaceArray;
+    }
+
+    private void generateSphere()
+    {
+        generateIcosahedron();
+        triangulateIcosahedron(numberOfTriangulations);
+    }
+
+    private void generateIcosahedron()
+    {
+        Vertex northPole = createNorthPole();
+        Vertex[] northVertices = createNorthVertices();
+        Vertex[] southVertices = createSouthVertices();
+        Vertex southPole = createSouthPole();
+
+        //Phase 1: Create top section, fanning out from north pole
+        createEdge(northPole, northVertices[0]);
+        createEdge(northVertices[0], northVertices[1]);
+        createEdge(northVertices[1], northPole);
+        createEdge(northVertices[1], northVertices[2]);
+        createEdge(northVertices[2], northPole);
+        createEdge(northVertices[2], northVertices[3]);
+        createEdge(northVertices[3], northPole);
+        createEdge(northVertices[3], northVertices[4]);
+        createEdge(northVertices[4], northPole);
+        createEdge(northVertices[4], northVertices[0]);
+
+        //Phase 2: Add on downward-facing triangles within middle section
+        createEdge(northVertices[0], southVertices[0]);
+        createEdge(southVertices[0], northVertices[1]);
+        createEdge(northVertices[1], southVertices[1]);
+        createEdge(southVertices[1], northVertices[2]);
+        createEdge(northVertices[2], southVertices[2]);
+        createEdge(southVertices[2], northVertices[3]);
+        createEdge(northVertices[3], southVertices[3]);
+        createEdge(southVertices[3], northVertices[4]);
+        createEdge(northVertices[4], southVertices[4]);
+        createEdge(southVertices[4], northVertices[0]);
+
+        //Phase 3: Add on bottom section while also completing the middle section
+        createEdge(southVertices[0], southVertices[1]);
+        createEdge(southVertices[0], southPole);
+        createEdge(southPole, southVertices[1]);
+        createEdge(southVertices[1], southVertices[2]);
+        createEdge(southPole, southVertices[2]);
+        createEdge(southVertices[2], southVertices[3]);
+        createEdge(southPole, southVertices[3]);
+        createEdge(southVertices[3], southVertices[4]);
+        createEdge(southPole, southVertices[4]);
+        createDoubledEdge(southVertices[4], southVertices[0]);
+    }
+
+    private void triangulateIcosahedron(int counter)
+    {
+        for (int i = 0; i < counter; i++)
+        {
+            throw new NotImplementedException();
+
+            //TODO Create set of "edges" in icosahedron
+
+            //TODO Split each edge
+
+            //TODO Triangulate each face
+
+            //TODO Reset all vertex coordinates to correct spherical radius length
+        }
     }
 
     //Written by Yashar
@@ -122,6 +191,11 @@ public class SphereGenerator : IGenerator
         }
     }
 
+    private void directChain(Vertex begin, Vertex middle, Vertex end)
+    {
+        throw new NotImplementedException(); //TODO
+    }
+
     private void directChain(HalfEdge firstEdge, Vertex begin, Vertex end)
     {
         foreach (HalfEdge hE in end.halfEdges)
@@ -165,23 +239,22 @@ public class SphereGenerator : IGenerator
         {
             directChain(commonToFirst, firstToSecond);
             directChain(firstToSecond, secondToCommon);
+            directChain(secondToCommon, commonToFirst); //May be redundent in some cases
 
-            Face triangleFace = new Face(commonToFirst, firstToSecond, secondToCommon);
-            commonToFirst.face = triangleFace;
-            firstToSecond.face = triangleFace;
-            secondToCommon.face = triangleFace;
+            //Ensure cycle is valid
+            if (firstToSecond.next != null
+                && firstToSecond.next.next != null
+                && firstToSecond.next.next.next == firstToSecond)
+            {
+                Face triangleFace = new Face(commonToFirst, firstToSecond, secondToCommon);
+                commonToFirst.face = triangleFace;
+                firstToSecond.face = triangleFace;
+                secondToCommon.face = triangleFace;
 
-            //add to data structure
-            faceList.Add(triangleFace);
+                //add to data structure
+                faceList.Add(triangleFace);
+            }
         }
-    }
-
-    //"Edge" case when generating icosahedron's second to last edge
-    private void createEdgeAndDiamond(Vertex first, Vertex second, Vertex third)
-    {
-        HalfEdge[] halfEdges = createHalfEdges(first, second);
-        tryToAddFace(first, second, halfEdges[0]);
-        directChain(halfEdges[1], first, third);
     }
 
     //"Edge" case when generating icosahedron's last edge
@@ -265,47 +338,5 @@ public class SphereGenerator : IGenerator
 
     }
 
-    public void generateIcosahedron()
-    {
-        Vertex northPole = createNorthPole();
-        Vertex[] northVertices = createNorthVertices();
-        Vertex[] southVertices = createSouthVertices();
-        Vertex southPole = createSouthPole();
-
-        //Phase 1: Create top section, fanning out from north pole
-        createEdge(northPole, northVertices[0]);
-        createEdge(northVertices[0], northVertices[1]);
-        createEdge(northVertices[1], northPole);
-        createEdge(northVertices[1], northVertices[2]);
-        createEdge(northVertices[2], northPole);
-        createEdge(northVertices[2], northVertices[3]);
-        createEdge(northVertices[3], northPole);
-        createEdge(northVertices[3], northVertices[4]);
-        createEdge(northVertices[4], northPole);
-        createEdge(northVertices[4], northVertices[0]);
-
-        //Phase 2: Add on downward-facing triangles within middle section
-        createEdge(northVertices[0], southVertices[0]);
-        createEdge(southVertices[0], northVertices[1]);
-        createEdge(northVertices[1], southVertices[1]);
-        createEdge(southVertices[1], northVertices[2]);
-        createEdge(northVertices[2], southVertices[2]);
-        createEdge(southVertices[2], northVertices[3]);
-        createEdge(northVertices[3], southVertices[3]);
-        createEdge(southVertices[3], northVertices[4]);
-        createEdge(northVertices[4], southVertices[4]);
-        createEdge(southVertices[4], northVertices[0]);
-
-        //Phase 3: Add on bottom section while also completing the middle section
-        createEdge(southVertices[0], southVertices[1]);
-        createEdge(southVertices[0], southPole);
-        createEdge(southPole, southVertices[1]);
-        createEdge(southVertices[1], southVertices[2]);
-        createEdge(southPole, southVertices[2]);
-        createEdge(southVertices[2], southVertices[3]);
-        createEdge(southPole, southVertices[3]);
-        createEdge(southVertices[3], southVertices[4]);
-        createEdgeAndDiamond(southPole, southVertices[4], southVertices[0]);
-        createDoubledEdge(southVertices[4], southVertices[0]);
-    }
+    
 }
