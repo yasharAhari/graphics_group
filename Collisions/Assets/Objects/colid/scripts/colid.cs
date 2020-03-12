@@ -14,7 +14,7 @@ public class colid : MonoBehaviour
     void Start()
     {
         // Set radius
-        generator.SetRadius(4f);
+        generator.SetRadius(20f);
 
         // get the surface triangles and get it to instantiate as triangles 
         UnitSurface[] surfaces = this.generator.GetUnitSurfaces();

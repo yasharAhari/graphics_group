@@ -5,6 +5,20 @@ using UnityEngine;
 
 public class SphereGenerator : IGenerator
 {
+    private class FaceVertices
+    {
+        public Vertex oneTwoMid;
+        public Vertex twoThreeMid;
+        public Vertex threeOneMid;
+
+        public FaceVertices(Vertex first, Vertex second, Vertex third)
+        {
+            oneTwoMid = first;
+            twoThreeMid = second;
+            threeOneMid = third;
+        }
+    }
+
     private ArrayList vertexList = new ArrayList();
     private ArrayList faceList = new ArrayList();
     private float radius;
@@ -20,7 +34,7 @@ public class SphereGenerator : IGenerator
         phiRotationDegrees = 60;
         thetaRotationDegrees = 72;
         southPoleThetaRotationOffsetDegrees = thetaRotationDegrees / 2;
-        numberOfTriangulations = 0;
+        numberOfTriangulations = 1;
     }
 
     public void SetRadius(float r)
@@ -108,15 +122,148 @@ public class SphereGenerator : IGenerator
     {
         for (int i = 0; i < counter; i++)
         {
-            throw new NotImplementedException();
+            //Create set of "edges" in icosahedron
+            SortedSet<Edge> edgeSet = createEdgeSet();
 
-            //TODO Create set of "edges" in icosahedron
+            //Split each edge
+            foreach (Edge edge in edgeSet)
+            {
+                Vertex first = edge.hE1.startVertex;
+                Vertex second = edge.hE1.endVertex;
+                HalfEdge firstToSecond = edge.hE1;
+                HalfEdge secondToFirst = edge.hE2;
+                HalfEdge previousToFirst = findPreviousHalfEdge(firstToSecond);
+                HalfEdge previousToSecond = findPreviousHalfEdge(secondToFirst);
 
-            //TODO Split each edge
+                splitEdge(first, second, firstToSecond, secondToFirst, previousToFirst, previousToSecond);
+            }
+            //  Verify splits
+            //ArrayList verifiedFaceList = new ArrayList();
+            //foreach (Face face in faceList)
+            //{
+            //    HalfEdge start = face.halfEdges[0];
+            //    if (start.next != null
+            //    && start.next.next != null
+            //    && start.next.next.next != null
+            //    && start.next.next.next.next != null
+            //    && start.next.next.next.next.next != null
+            //    && start.next.next.next.next.next.next != null
+            //    && start.next.next.next.next.next.next == start)
+            //    {
+            //        verifiedFaceList.Add(face);
+            //    }
+            //}
 
-            //TODO Triangulate each face
+            //Triangulate each face
+            ArrayList triangulationVerticesList = new ArrayList();
 
-            //TODO Reset all vertex coordinates to correct spherical radius length
+            foreach (Face face in faceList)
+            {
+                triangulationVerticesList.Add(getTriangulationVertices(face));
+                dereferenceFace(face);
+            }
+
+            faceList.Clear();
+            //faceList.Remove(currentFace);
+
+            foreach (FaceVertices vertices in triangulationVerticesList)
+            {
+                createEdge(vertices.oneTwoMid, vertices.threeOneMid);
+                createEdge(vertices.twoThreeMid, vertices.oneTwoMid);
+                directChain(vertices.threeOneMid, vertices.oneTwoMid, vertices.twoThreeMid);
+                createDoubledEdge(vertices.threeOneMid, vertices.twoThreeMid);
+            }
+            
+        }
+        //TODO Reset all vertex coordinates to correct spherical radius length
+
+    }
+
+    SortedSet<Edge> createEdgeSet()
+    {
+        SortedSet<Edge> edgeSet = new SortedSet<Edge>();
+        foreach (Face face in faceList)
+        {
+            foreach (HalfEdge hE in face.halfEdges)
+            {
+                Edge edge = new Edge(hE, hE.opposite);
+                edgeSet.Add(edge);
+            }
+        }
+
+        return edgeSet;
+    }
+
+    HalfEdge findPreviousHalfEdge(HalfEdge originalHalfEdge)
+    {
+        Face originalFace = originalHalfEdge.face;
+        HalfEdge previousHalfEdge = originalHalfEdge.next;
+
+        while (previousHalfEdge.next != originalHalfEdge)
+        {
+            previousHalfEdge = previousHalfEdge.next;
+        }
+
+        return previousHalfEdge;
+    }
+
+    void splitEdge(Vertex first, Vertex second, HalfEdge firstToSecond, HalfEdge secondToFirst, 
+        HalfEdge previousToFirst, HalfEdge previousToSecond)
+    {
+        Vertex midVertex = createMidVertex(first, second);
+        firstToSecond.startVertex = midVertex;
+        secondToFirst.startVertex = midVertex;
+
+        HalfEdge firstToMid = new HalfEdge(first, midVertex);
+        HalfEdge secondToMid = new HalfEdge(second, midVertex);
+
+        firstToMid.next = firstToSecond;
+        secondToMid.next = secondToFirst;
+        firstToMid.opposite = secondToFirst;
+        secondToFirst.opposite = firstToMid;
+        secondToMid.opposite = firstToSecond;
+        firstToSecond.opposite = secondToMid;
+        previousToSecond.next = secondToMid;
+        previousToFirst.next = firstToMid;
+        midVertex.tryToAddHalfEdge(secondToMid);
+        midVertex.tryToAddHalfEdge(firstToMid);
+
+        //add to data structure
+        vertexList.Add(midVertex);
+    }
+
+    Vertex createMidVertex(Vertex first, Vertex second)
+    {
+        float midX = (first.x + second.x) / 2.0f;
+        float midY = (first.y + second.y) / 2.0f;
+        float midZ = (first.z + second.z) / 2.0f;
+
+        return new Vertex(midX, midY, midZ);
+    }
+
+    FaceVertices getTriangulationVertices(Face currentFace)
+    {
+        HalfEdge threeOneMidToFirst = currentFace.halfEdges[0];
+        HalfEdge oneTwoMidToSecond = currentFace.halfEdges[1];
+        HalfEdge twoThreeMidToThird = currentFace.halfEdges[2];
+
+        Vertex threeOneMid = threeOneMidToFirst.startVertex;
+        //Vertex first = threeOneMidToFirst.endVertex;
+        Vertex oneTwoMid = oneTwoMidToSecond.startVertex;
+        //Vertex second = oneTwoMidToSecond.endVertex;
+        Vertex twoThreeMid = twoThreeMidToThird.startVertex;
+        //Vertex third = twoThreeMidToThird.endVertex;
+        FaceVertices vertices = new FaceVertices(oneTwoMid, twoThreeMid, threeOneMid);
+
+        return vertices;
+    }
+
+    void dereferenceFace(Face currentFace)
+    {
+        foreach (HalfEdge hE in currentFace.halfEdges)
+        {
+            hE.next.next = null;
+            hE.face = null;
         }
     }
 
@@ -193,7 +340,42 @@ public class SphereGenerator : IGenerator
 
     private void directChain(Vertex begin, Vertex middle, Vertex end)
     {
-        throw new NotImplementedException(); //TODO
+        HalfEdge middleToEnd = null;
+        HalfEdge beginToMiddle = null;
+
+        foreach (HalfEdge hE in end.halfEdges)
+        {
+            if (hE.startVertex == middle)
+            {
+                middleToEnd = hE;
+                break;
+                //directChain(firstEdge, hE);
+                //return;
+
+            }
+            if (middleToEnd != null)
+            {
+                break;
+            }
+        }
+
+        foreach (HalfEdge hE in middle.halfEdges)
+        {
+            if (hE.startVertex == begin)
+            {
+                beginToMiddle = hE;
+                break;
+            }
+            if (beginToMiddle != null)
+            {
+                break;
+            }
+        }
+
+        if (middleToEnd != null && beginToMiddle != null)
+        {
+            directChain(beginToMiddle, middleToEnd);
+        }
     }
 
     private void directChain(HalfEdge firstEdge, Vertex begin, Vertex end)
@@ -213,7 +395,7 @@ public class SphereGenerator : IGenerator
         firstEdge.next = secondEdge;
     }
 
-    private void tryToAddFace(Vertex first, Vertex second, HalfEdge firstToSecond)
+    private bool tryToAddFace(Vertex first, Vertex second, HalfEdge firstToSecond)
     {
         HalfEdge secondToCommon = null;
         HalfEdge commonToFirst = null;
@@ -254,6 +436,11 @@ public class SphereGenerator : IGenerator
                 //add to data structure
                 faceList.Add(triangleFace);
             }
+            return true;
+        }
+        else
+        {
+            return false;
         }
     }
 

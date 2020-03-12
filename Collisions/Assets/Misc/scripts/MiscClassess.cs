@@ -58,32 +58,39 @@ public class Point : IEquatable<Point>
         return this.Equals(obj as Point);
     }
 
-    public bool Equals(Point point)
+    public bool Equals(Point other)
     {
-        if (Object.ReferenceEquals(point, null))
+        if (Object.ReferenceEquals(other, null))
         {
             return false;
         }
 
-        if (Object.ReferenceEquals(this, point))
+        if (Object.ReferenceEquals(this, other))
         {
             return true;
         }
 
-        if (this.GetType() != point.GetType())
+        if (this.GetType() != other.GetType())
         {
             return false;
         }
 
         //compare x, y, and z values
-        return (x == point.x) && (y == point.y) && (z == point.z);
+        return this.GetHashCode() == other.GetHashCode();
+        //return ((double)x.CompareTo(other.x) == 0) 
+        //    && ((double)y.CompareTo(other.y) == 0)
+        //    && ((double)z.CompareTo(other.z) == 0);
     }
 
     //must be unique enough to differentiate points by coordinates
     public override int GetHashCode()
     {
-        float seed = 17.0f; //some prime number
-        return (int)((x * seed) + (y * seed) + (z * seed));
+        float hashCode = 17.0f; //some prime number
+        hashCode = hashCode * 31f + x;
+        hashCode = hashCode * 31f + y;
+        hashCode = hashCode * 31f + z;
+
+        return (int)hashCode;
     }
 
     public static bool operator ==(Point left, Point right)
@@ -161,6 +168,29 @@ public class HalfEdge
         startVertex = start;
         endVertex = end;
     }
+
+    public override bool Equals(object obj)
+    {
+        return Equals(obj as HalfEdge);
+    }
+
+    public bool Equals(HalfEdge other)
+    {
+        return other != null
+            && this.GetHashCode() == other.GetHashCode();
+    }
+
+    public override int GetHashCode()
+    {
+        Point start = startVertex;
+        Point end = endVertex;
+
+        var hashCode = 23;
+        hashCode = hashCode * 37 + start.GetHashCode();
+        hashCode = hashCode * 37 + end.GetHashCode();
+
+        return hashCode;
+    }
 }
 
 public class Face
@@ -173,5 +203,43 @@ public class Face
         halfEdges[0] = one;
         halfEdges[1] = two;
         halfEdges[2] = three;
+    }
+}
+
+public class Edge : IComparable<Edge>
+{
+    public HalfEdge hE1;
+    public HalfEdge hE2;
+
+    public Edge(HalfEdge hE1, HalfEdge hE2)
+    {
+        this.hE1 = hE1;
+        this.hE2 = hE2;
+    }
+
+    public int CompareTo(Edge other)
+    {
+        return (int)(this.GetHashCode() - other.GetHashCode());
+    }
+
+    public override bool Equals(object obj)
+    {
+        return Equals(obj as Edge);
+    }
+
+    public bool Equals(Edge other)
+    {
+        return other != null
+            && ((hE1.GetHashCode() == other.hE1.GetHashCode() && hE2.GetHashCode() == other.hE2.GetHashCode())
+            || (hE1.GetHashCode() == other.hE2.GetHashCode() && hE2.GetHashCode() == other.hE1.GetHashCode()));
+    }
+
+    public override int GetHashCode()
+    {
+        //var hashCode = 19;
+        //hashCode = hashCode * 31 + hE1.GetHashCode();
+        //hashCode = hashCode * 31 + hE2.GetHashCode();
+        
+        return hE1.GetHashCode() + hE2.GetHashCode();
     }
 }
