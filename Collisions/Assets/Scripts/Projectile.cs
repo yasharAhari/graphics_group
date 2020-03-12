@@ -10,16 +10,16 @@ public class Projectile : MonoBehaviour
     void Start()
     {
         // Destroy the projectile at 2 seconds
-        Object.Destroy( gameObject , 2.0f );
+        Object.Destroy( gameObject , 3f );
     }
 
     // Update is called once per frame
     void Update()
     {
-        //gameObject.GetComponent<Rigidbody>( ).velocity = transform.forward * speed;
+        gameObject.GetComponent<Rigidbody>( ).velocity = transform.forward * speed;
 
-        Vector3 startPos = transform.position;
-        Quaternion shotAngle = transform.rotation;
+        //Vector3 startPos = transform.position;
+        //Quaternion shotAngle = transform.rotation;
 
         //gameObject.GetComponent<Rigidbody>( ).AddForce( transform.forward * speed , ForceMode.Impulse );
 
