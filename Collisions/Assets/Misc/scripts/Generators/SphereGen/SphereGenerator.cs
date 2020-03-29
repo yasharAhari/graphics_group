@@ -19,8 +19,8 @@ public class SphereGenerator : IGenerator
         }
     }
 
-    private ArrayList vertexList = new ArrayList();
-    private ArrayList faceList = new ArrayList();
+    private SortedSet<Vertex> vertexSet = new SortedSet<Vertex>();
+    private SortedSet<Face> faceSet = new SortedSet<Face>();
     private float radius;
     private float edgeLength;
     private double phiRotationDegrees;
@@ -34,7 +34,7 @@ public class SphereGenerator : IGenerator
         phiRotationDegrees = 60;
         thetaRotationDegrees = 72;
         southPoleThetaRotationOffsetDegrees = thetaRotationDegrees / 2;
-        numberOfTriangulations = 1;
+        numberOfTriangulations = 3; //Max of 3, above 3 gets buggy
     }
 
     public void SetRadius(float r)
@@ -53,11 +53,17 @@ public class SphereGenerator : IGenerator
     {
         generateSphere();
 
-        UnitSurface[] unitSurfaceArray = new UnitSurface[faceList.Count];
+        UnitSurface[] unitSurfaceArray = new UnitSurface[faceSet.Count];
+
+        ArrayList faceList = new ArrayList();
+        foreach (Face face in faceSet)
+        {
+            faceList.Add(face);
+        }
 
         for (int i = 0; i < unitSurfaceArray.Length; i++)
         {
-            Face face = (Face)faceList[i];
+            Face face = (Face) faceList[i];
             Vertex point1 = face.halfEdges[0].endVertex;
             Vertex point2 = face.halfEdges[1].endVertex;
             Vertex point3 = face.halfEdges[2].endVertex;
@@ -137,52 +143,83 @@ public class SphereGenerator : IGenerator
 
                 splitEdge(first, second, firstToSecond, secondToFirst, previousToFirst, previousToSecond);
             }
-            //  Verify splits
-            //ArrayList verifiedFaceList = new ArrayList();
-            //foreach (Face face in faceList)
-            //{
-            //    HalfEdge start = face.halfEdges[0];
-            //    if (start.next != null
-            //    && start.next.next != null
-            //    && start.next.next.next != null
-            //    && start.next.next.next.next != null
-            //    && start.next.next.next.next.next != null
-            //    && start.next.next.next.next.next.next != null
-            //    && start.next.next.next.next.next.next == start)
-            //    {
-            //        verifiedFaceList.Add(face);
-            //    }
-            //}
+            //Verify splits
+            ArrayList verifiedFaceList = new ArrayList();
+            foreach (Face face in faceSet)
+            {
+                HalfEdge start = face.halfEdges[0];
+                if (start.next != null
+                && start.next.next != null
+                && start.next.next.next != null
+                && start.next.next.next.next != null
+                && start.next.next.next.next.next != null
+                && start.next.next.next.next.next.next != null
+                && start.next.next.next.next.next.next == start)
+                {
+                    verifiedFaceList.Add(face);
+                }
+            }
 
             //Triangulate each face
             ArrayList triangulationVerticesList = new ArrayList();
 
-            foreach (Face face in faceList)
+            foreach (Face face in faceSet)
             {
                 triangulationVerticesList.Add(getTriangulationVertices(face));
                 dereferenceFace(face);
             }
 
-            faceList.Clear();
-            //faceList.Remove(currentFace);
+            faceSet.Clear();
 
             foreach (FaceVertices vertices in triangulationVerticesList)
             {
                 createEdge(vertices.oneTwoMid, vertices.threeOneMid);
                 createEdge(vertices.twoThreeMid, vertices.oneTwoMid);
                 directChain(vertices.threeOneMid, vertices.oneTwoMid, vertices.twoThreeMid);
-                createDoubledEdge(vertices.threeOneMid, vertices.twoThreeMid);
+                createEdge(vertices.threeOneMid, vertices.twoThreeMid);
             }
-            
+
+            foreach (FaceVertices vertices in triangulationVerticesList)
+            {
+                HalfEdge oneTwoMidToTwoThreeMid = null;
+                foreach (HalfEdge hTwoThreeMid in vertices.twoThreeMid.halfEdges)
+                {
+                    if (hTwoThreeMid.startVertex.Equals(vertices.oneTwoMid))
+                    {
+                        oneTwoMidToTwoThreeMid = hTwoThreeMid;
+                    }
+                }
+                tryToAddFace(vertices.oneTwoMid, vertices.twoThreeMid, oneTwoMidToTwoThreeMid);
+            }
         }
-        //TODO Reset all vertex coordinates to correct spherical radius length
+
+        //Reset all vertex coordinates to correct spherical radius length
+        foreach (Vertex vertex in vertexSet)
+        {
+            //double radius = Math.Sqrt(Math.Pow(vertex.x, 2) + Math.Pow(vertex.y, 2) + Math.Pow(vertex.z, 2));
+            double phiRadians = getPhiRadians(vertex.x, vertex.y, vertex.z);
+            double thetaRadians = getThetaRadians(vertex.x, vertex.y, vertex.z);
+
+            Point coords = SToCCUsingRadians(this.radius, phiRadians, thetaRadians);
+
+            vertex.x = coords.x;
+            if (vertex.y < 0 && coords.y > 0)
+            {
+                vertex.y = -coords.y;
+            }
+            else
+            {
+                vertex.y = coords.y;
+            }
+            vertex.z = coords.z;
+        }
 
     }
 
     SortedSet<Edge> createEdgeSet()
     {
         SortedSet<Edge> edgeSet = new SortedSet<Edge>();
-        foreach (Face face in faceList)
+        foreach (Face face in faceSet)
         {
             foreach (HalfEdge hE in face.halfEdges)
             {
@@ -229,7 +266,7 @@ public class SphereGenerator : IGenerator
         midVertex.tryToAddHalfEdge(firstToMid);
 
         //add to data structure
-        vertexList.Add(midVertex);
+        vertexSet.Add(midVertex);
     }
 
     Vertex createMidVertex(Vertex first, Vertex second)
@@ -262,6 +299,11 @@ public class SphereGenerator : IGenerator
     {
         foreach (HalfEdge hE in currentFace.halfEdges)
         {
+            if (hE.next == null)
+            {
+                throw new System.ArgumentNullException("Face " + currentFace.id + " has corrupted half edges");
+            }
+
             hE.next.next = null;
             hE.face = null;
         }
@@ -277,9 +319,55 @@ public class SphereGenerator : IGenerator
         return new Point(x, y, z);
     }
 
-    private Point CCToS(float x, float y, float z)
+    private Point SToCCUsingRadians(double radius, double phiRadians, double thetaRadians)
     {
-        throw new NotImplementedException();
+        float x = (float)(radius * Math.Sin(phiRadians) * Math.Cos(thetaRadians));
+        float y = (float)(radius * Math.Sin(phiRadians) * Math.Sin(thetaRadians));
+        float z = (float)(radius * Math.Cos(phiRadians));
+
+        return new Point(x, y, z);
+    }
+
+    private double getThetaRadians(float x, float y, float z)
+    {
+        double phiRadians = getPhiRadians(x, y, z);
+        double radius = Math.Sqrt(Math.Pow(x, 2) + Math.Pow(y, 2) + Math.Pow(z, 2));
+        double acosArg;
+        if (x == 0)
+        {
+            acosArg = 0;
+        }
+        else
+        {
+            acosArg = x / (radius * Math.Sin(phiRadians));
+        }
+        
+        if (acosArg < -1)
+        {
+            acosArg = -1;
+        }
+        if (acosArg > 1)
+        {
+            acosArg = 1;
+        }
+        double thetaRadians = Math.Acos(acosArg);
+        return thetaRadians;
+    }
+
+    private double getPhiRadians(float x, float y, float z)
+    {
+        double radius = Math.Sqrt(Math.Pow(x, 2) + Math.Pow(y, 2) + Math.Pow(z, 2));
+        double acosArg = z / radius;
+        if (acosArg < -1)
+        {
+            acosArg = -1;
+        }
+        if (acosArg > 1)
+        {
+            acosArg = 1;
+        }
+        double phiRadians = Math.Acos(acosArg);
+        return phiRadians;
     }
 
     //Written by Yashar
@@ -349,9 +437,6 @@ public class SphereGenerator : IGenerator
             {
                 middleToEnd = hE;
                 break;
-                //directChain(firstEdge, hE);
-                //return;
-
             }
             if (middleToEnd != null)
             {
@@ -434,7 +519,7 @@ public class SphereGenerator : IGenerator
                 secondToCommon.face = triangleFace;
 
                 //add to data structure
-                faceList.Add(triangleFace);
+                faceSet.Add(triangleFace);
             }
             return true;
         }
@@ -457,7 +542,7 @@ public class SphereGenerator : IGenerator
         Vertex northPole = new Vertex(SToCC(radius, 0, 0));
 
         //add to data structure
-        vertexList.Add(northPole);
+        vertexSet.Add(northPole);
 
         return northPole;
     }
@@ -473,11 +558,11 @@ public class SphereGenerator : IGenerator
         Vertex fifth = new Vertex(SToCC(radius, phiRotationDegrees, thetaRotationDegrees * 4));
 
         //add to data structure
-        vertexList.Add(first);
-        vertexList.Add(second);
-        vertexList.Add(third);
-        vertexList.Add(fourth);
-        vertexList.Add(fifth);
+        vertexSet.Add(first);
+        vertexSet.Add(second);
+        vertexSet.Add(third);
+        vertexSet.Add(fourth);
+        vertexSet.Add(fifth);
 
         vertices[0] = first;
         vertices[1] = second;
@@ -493,7 +578,7 @@ public class SphereGenerator : IGenerator
         Vertex southPole = new Vertex(SToCC(radius, 180, 0));
 
         //add to data structure
-        vertexList.Add(southPole);
+        vertexSet.Add(southPole);
 
         return southPole;
     }
@@ -509,11 +594,11 @@ public class SphereGenerator : IGenerator
         Vertex fifth = new Vertex(SToCC(radius, 180 - phiRotationDegrees, southPoleThetaRotationOffsetDegrees + thetaRotationDegrees * 4));
 
         //add to data structure
-        vertexList.Add(first);
-        vertexList.Add(second);
-        vertexList.Add(third);
-        vertexList.Add(fourth);
-        vertexList.Add(fifth);
+        vertexSet.Add(first);
+        vertexSet.Add(second);
+        vertexSet.Add(third);
+        vertexSet.Add(fourth);
+        vertexSet.Add(fifth);
 
         vertices[0] = first;
         vertices[1] = second;
