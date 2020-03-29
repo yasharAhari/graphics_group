@@ -131,7 +131,7 @@ public class Point : IEquatable<Point>
     }
 }
 
-public class Vertex : Point
+public class Vertex : Point, IComparable<Vertex>
 {
     //There should be a maximum of 3 half edges in this ArrayList
     public ArrayList halfEdges = new ArrayList();
@@ -143,7 +143,7 @@ public class Vertex : Point
     public Vertex(Point p) : base(p.x, p.y, p.z)
     {
     }
-
+    
     public void tryToAddHalfEdge(HalfEdge halfEdge)
     {
         Point endPoint = halfEdge.endVertex;
@@ -153,6 +153,34 @@ public class Vertex : Point
             halfEdges.Add(halfEdge);
         }
     }
+
+    public int CompareTo(Vertex other)
+    {
+        return (int)(this.GetHashCode() - other.GetHashCode());
+    }
+
+    public override bool Equals(object obj)
+    {
+        return Equals(obj as Vertex);
+    }
+
+    public bool Equals(Vertex other)
+    {
+        return other != null
+            && this.GetHashCode() == other.GetHashCode();
+    }
+
+    public override int GetHashCode()
+    {
+        float hashCode = 23f;
+
+        hashCode = hashCode * 37 + this.x;
+        hashCode = hashCode * 37 + this.y;
+        hashCode = hashCode * 37 + this.z;
+
+        return (int) hashCode;
+    }
+
 }
 
 public class HalfEdge
@@ -182,8 +210,8 @@ public class HalfEdge
 
     public override int GetHashCode()
     {
-        Point start = startVertex;
-        Point end = endVertex;
+        Point start = startVertex as Point;
+        Point end = endVertex as Point;
 
         var hashCode = 23;
         hashCode = hashCode * 37 + start.GetHashCode();
@@ -193,7 +221,7 @@ public class HalfEdge
     }
 }
 
-public class Face
+public class Face : IComparable<Face>
 {
     public HalfEdge[] halfEdges = new HalfEdge[3];
     public string id = Guid.NewGuid().ToString();
@@ -203,6 +231,11 @@ public class Face
         halfEdges[0] = one;
         halfEdges[1] = two;
         halfEdges[2] = three;
+    }
+
+    public int CompareTo(Face other)
+    {
+        return (int)(this.id.GetHashCode() - other.id.GetHashCode());
     }
 }
 
