@@ -17,6 +17,7 @@ public class Triangle : MonoBehaviour
     void Start()
     {
         this.gameObject.AddComponent(typeof(MeshFilter));
+        this.gameObject.AddComponent(typeof(MeshCollider));
         this.UpdateShape();
     }
 
@@ -43,6 +44,9 @@ public class Triangle : MonoBehaviour
         this.GetComponent<MeshFilter>().mesh.triangles = this.surface.getTriangle();
         this.GetComponent<MeshFilter>().mesh.RecalculateNormals();
         this.GetComponent<MeshRenderer>().material.SetColor("_Color", UnityEngine.Random.ColorHSV());
+        // add a current mesh for the collider too 
+        Mesh mesh = this.GetComponent<MeshFilter>().mesh;
+        this.GetComponent<MeshCollider>().sharedMesh = mesh;
 
     }
 }
