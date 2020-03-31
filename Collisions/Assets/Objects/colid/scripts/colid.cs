@@ -24,7 +24,7 @@ public class colid : MonoBehaviour
             tri.AddComponent<Triangle>();
             tri.GetComponent<Triangle>().SetSurface(surface);
             tri.transform.parent = this.transform;
-            tri.AddComponent<MeshCollider>();
+           
            
         }
         
