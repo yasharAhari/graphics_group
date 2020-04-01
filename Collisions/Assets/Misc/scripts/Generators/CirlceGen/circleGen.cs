@@ -96,4 +96,19 @@ public class CircleGen : IGenerator
         }
 
     }
+
+    public SortedSet<Face> GetFaces()
+    {
+        throw new NotImplementedException();
+    }
+
+    public SortedSet<Vertex> GetVertices()
+    {
+        throw new NotImplementedException();
+    }
+
+    public Face getFaceWithId(string faceId)
+    {
+        throw new NotImplementedException();
+    }
 }

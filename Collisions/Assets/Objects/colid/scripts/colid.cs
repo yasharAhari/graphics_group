@@ -23,7 +23,10 @@ public class colid : MonoBehaviour
             GameObject tri = new GameObject(surface.id);
             tri.AddComponent<Triangle>();
             tri.GetComponent<Triangle>().SetSurface(surface);
+            Face currentFace = generator.getFaceWithId(surface.id);
+            tri.GetComponent<Triangle>().InsertFace(currentFace);
             tri.transform.parent = this.transform;
+
            
            
         }

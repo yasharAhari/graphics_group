@@ -19,8 +19,8 @@ public class SphereGenerator : IGenerator
         }
     }
 
-    private SortedSet<Vertex> vertexSet = new SortedSet<Vertex>();
-    private SortedSet<Face> faceSet = new SortedSet<Face>();
+    public SortedSet<Vertex> vertexSet = new SortedSet<Vertex>();
+    public SortedSet<Face> faceSet = new SortedSet<Face>();
     private float radius;
     private float edgeLength;
     private double phiRotationDegrees;
@@ -35,6 +35,28 @@ public class SphereGenerator : IGenerator
         thetaRotationDegrees = 72;
         southPoleThetaRotationOffsetDegrees = thetaRotationDegrees / 2;
         numberOfTriangulations = 3; //Max of 3, above 3 gets buggy
+    }
+
+    public SortedSet<Face> GetFaces()
+    {
+        return this.faceSet;
+    }
+
+    public Face getFaceWithId(string faceId)
+    {
+        foreach(Face thisFace in this.faceSet)
+        {
+            if(thisFace.id.Equals(faceId))
+            {
+                return thisFace;
+            }
+        }
+        return null;
+    }
+
+    public SortedSet<Vertex> GetVertices()
+    {
+        return this.vertexSet;
     }
 
     public void SetRadius(float r)

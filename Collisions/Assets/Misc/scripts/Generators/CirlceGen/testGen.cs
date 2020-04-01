@@ -1,5 +1,17 @@
-﻿public class testGen : IGenerator
+﻿using System.Collections.Generic;
+
+public class testGen : IGenerator
 {
+    public SortedSet<Face> GetFaces()
+    {
+        throw new System.NotImplementedException();
+    }
+
+    public Face getFaceWithId(string faceId)
+    {
+        throw new System.NotImplementedException();
+    }
+
     public UnitSurface[] GetUnitSurfaces()
     {
         // make a pyramid by hand for testing 
@@ -14,6 +26,11 @@
         surfaces[5] = new UnitSurface(new Point(5, 5, 0), new Point(-5, -5, 0), new Point(-5, 5, 0), "Triangle");
 
         return surfaces;
+    }
+
+    public SortedSet<Vertex> GetVertices()
+    {
+        throw new System.NotImplementedException();
     }
 
     public void SetRadius(float r)

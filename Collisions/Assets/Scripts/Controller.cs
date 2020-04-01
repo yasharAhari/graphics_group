@@ -92,7 +92,10 @@ public  class Controller : MonoBehaviour {
         proj.GetComponent<Projectile>( ).speed = model.ProjectileSpeed;
         proj.transform.localScale = new Vector3( model.ProjectileScale , model.ProjectileScale , model.ProjectileScale );
         // Eventually use this area to set the Mass of the projectile.
+        proj.GetComponent<Rigidbody>().mass = model.ProjectileMass;
 
+        // disable the gravity use 
+        proj.GetComponent<Rigidbody>().useGravity = false;
        // Instantiate( proj,new Vector3( mainCamera.transform.position.x , mainCamera.transform.position.y , mainCamera.transform.position.z ) , transform.rotation );
         Instantiate( proj ,  mainCamera.ScreenToWorldPoint(new Vector3(Screen.width/2, Screen.height/2, mainCamera.nearClipPlane)) , mainCamera.transform.rotation );
     }
