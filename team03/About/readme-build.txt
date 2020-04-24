@@ -1,0 +1,1 @@
+This software has been pre-built for your convenience. To run our Unity game, please navigate to the team03/Build/ directory. For Windows users, go into the "Windows/" directory and run the "Sphere Sim.exe" file. For Mac users, go into the "Mac OS X/" directory and run the "Sphere Sim.app" file.
